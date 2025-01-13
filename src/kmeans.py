@@ -5,7 +5,7 @@ from .utils import setup_logging
 from .config import Config
 
 class MPIKMeans:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, n_clusters: int):
         """
         Initialize the MPI K-means clustering algorithm
 
@@ -19,7 +19,7 @@ class MPIKMeans:
         self.logger = setup_logging(f"MPIKMeans_Process_{self.rank}")
         
         # Initialize parameters from config
-        self.n_clusters = config.n_clusters
+        self.n_clusters = n_clusters
         self.max_iter = config.max_iter
         self.tol = config.tolerance
         self.random_state = config.random_state
