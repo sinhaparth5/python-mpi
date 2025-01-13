@@ -1,0 +1,9 @@
+services:
+  mpi_master:
+    build: .
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    environment:
+      - PYTHONBUFFERED=1
+    command: mpiexec -n 4 python -m src.main
