@@ -1,6 +1,12 @@
-n_clusters: 3
+datasets:
+  iris:
+    path: "data/iris_data.csv"
+    n_clusters: 3
+  wine:
+    path: "data/wine_data.csv"
+    n_clusters: 3
+
 max_iter: 100
 tolerance: 0.0001
 random_state: 42
-data_path: "data/sample_data.csv"
 log_level: "INFO"
