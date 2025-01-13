@@ -6,3 +6,4 @@ python-dotenv
 scikit-learn
 pytest
 logging
+requests
