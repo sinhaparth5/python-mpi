@@ -7,4 +7,6 @@ scikit-learn
 pytest
 logging
 requests
-matplotlib 
+matplotlib
+ucimlrepo 
+seaborn
