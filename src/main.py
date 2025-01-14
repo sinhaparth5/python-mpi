@@ -50,7 +50,7 @@ def main():
     
     try:
         # Load configuration
-        config = Config.from_yaml('config.yaml')
+        config = Config.from_yaml('config.yml')
         
         if rank == 0:
             logger.info("Starting MPI K-Means clustering applications")
@@ -60,7 +60,7 @@ def main():
         
         for dataset_name in config.datasets.keys():
             if rank == 0:
-                logger.info(f"\Processing {dataset_name} dataset...")
+                logger.info(f"Processing {dataset_name} dataset...")
             process_dataset(dataset_name, config, data_loader, rank, logger)
         
         if rank == 0:

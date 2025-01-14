@@ -35,8 +35,8 @@ class Config:
         return cls(
             datasets=datasets,
             max_iter=int(os.getenv('MAX_ITER', config_dict['max_iter'])),
-            tolerance=int(os.getenv('TOLERANCE', config_dict['tolerance'])),
+            tolerance=float(os.getenv('TOLERANCE', config_dict['tolerance'])),
             random_state=int(os.getenv('RANDOM_STATE', config_dict['random_state'])),
-            log_level=int(os.getenv('LOG_LEVEL', config_dict['log_level']))
+            log_level=os.getenv('LOG_LEVEL', config_dict['log_level'])
         )
     
