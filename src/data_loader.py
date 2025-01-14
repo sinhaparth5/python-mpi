@@ -10,6 +10,7 @@ class DataLoader:
     def __init__(self, config):
         self.config = config
         self.logger = setup_logging("DataLoader")
+        self.scaler = StandardScaler()
         
     def load_dataset(self, dataset_name: str) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -21,29 +22,36 @@ class DataLoader:
         try:
             dataset_config = self.config.datasets[dataset_name]
             self.logger.info(f"Loading {dataset_name} dataset from {dataset_config.path}")
-            file_path = dataset_config.path
             
-             # Check if file exists
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"Dataset file not found: {file_path}")
+            is_large = dataset_name in ['covertype', 'mnist']
             
-            self.logger.info(f"Loading {dataset_name} dataset from {file_path}")
+            if is_large:
+                # Load features and target separately for large datasets
+                X = pd.read_csv(dataset_config.path, chunksize=10000)
+                y = pd.read_csv(dataset_config.target_path)
+                
+                # Process chuncks
+                X_processed = []
+                for chunk in X:
+                    chunk_scaled = self.scaler.fit_transform(chunk)
+                    X_processed.append(chunk_scaled)
+                
+                X_scaled = np.vstack(X_processed)
+                y = y.values.ravel()
+            else:
+                df = pd.read_csv(dataset_config.path)
+                
+                if dataset_name == 'creditcard':
+                    X = df.drop(['Class', 'Time'], axis=1).values
+                    y = df['Class'].values
+                else:
+                    feature_cols = [col for col in df.columns if col != 'target']
+                    X = df[feature_cols].values
+                    y = df['target'].values if 'target' in df.columns else None
+                    
+                X_scaled = self.scaler.fit_transform(X)
             
-            df = pd.read_csv(file_path)
-            
-            # Basic preprocessing
-            df = df.dropna()
-            
-            # Separate features and target
-            feature_columns = [col for col in df.columns if col != 'target']
-            X = df[feature_columns].values
-            y = df['target'].values if 'target' in df.columns else None
-            
-            # Standardize the features
-            scaler = StandardScaler()
-            X_scaled = scaler.fit_transform(X)
-            
-            self.logger.info(f"Successfully loaded {dataset_name} dataset with shape {X_scaled.shape}")
+            self.logger.info(f"Successsfully loaded {dataset_name} dataset with shape {X_scaled.shape}")
             return X_scaled, y
             
         except Exception as e:
