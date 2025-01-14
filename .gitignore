@@ -10,3 +10,8 @@ wheels/
 .venv
 
 .env
+
+# Folders
+logs
+results
+result_img
