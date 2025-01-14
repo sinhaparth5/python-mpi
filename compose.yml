@@ -5,7 +5,6 @@ services:
       - .:/app
       - ./data:/app/data
       - ./results:/app/results
-      - ./result_img:/app/result_img
       - ./logs:/app/logs
     environment:
       - PYTHONBUFFERED=1
