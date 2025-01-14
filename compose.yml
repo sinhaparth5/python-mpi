@@ -4,6 +4,9 @@ services:
     volumes:
       - .:/app
       - ./data:/app/data
+      - ./results:/app/results
+      - ./result_img:/app/result_img
+      - ./logs:/app/logs
     environment:
       - PYTHONBUFFERED=1
     command: mpiexec -n 4 python -m src.main
