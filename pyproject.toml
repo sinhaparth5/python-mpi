@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "kagglehub>=0.3.6",
     "logging>=0.4.9.6",
     "matplotlib>=3.10.0",
     "mpi4py>=4.0.1",
@@ -15,4 +16,6 @@ dependencies = [
     "pyyaml>=6.0.2",
     "requests>=2.32.3",
     "scikit-learn>=1.6.1",
+    "seaborn>=0.13.2",
+    "ucimlrepo>=0.0.7",
 ]

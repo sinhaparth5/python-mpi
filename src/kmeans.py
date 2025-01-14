@@ -16,58 +16,71 @@ class MPIKMeans:
         self.max_iter = config.max_iter
         self.tol = config.tolerance
         self.random_state = config.random_state
+        self.batch_size = 1000
         
         if self.rank == 0:
             self.logger.info(f"Initializing MPIKMeans with {self.size} processes")
+            
+    def _process_batch(self, batch_X, centroids):
+        """Process a mini-batch of data"""
+        distances = np.sqrt(((batch_X - centroids[:, np.newaxis])**2).sum(axis=2))
+        labels = distances.argmin(axis=0)
+        
+        new_centroid = np.zeros_like(centroids)
+        counts = np.zeros(self.n_clusters, dtype=np.int64)
+        
+        for i in range(self.n_clusters):
+            mask = labels == i
+            if mask.any():
+                new_centroid[i] = batch_X[mask].sum(axis=0)
+                counts[i] = mask.sum()
+        
+        return new_centroid, counts, labels
 
     def fit(self, X):
         try:
-            if self.rank == 0:
-                self.logger.info("Starting K-means clustering")
-            
-            # Ensure data is in correct format
             X = np.asarray(X, dtype=np.float64)
+            n_samples = len(X)
             
-            # Initialize centroids on root process
+            # Initialize centroids
             if self.rank == 0:
                 np.random.seed(self.random_state)
-                idx = np.random.choice(len(X), self.n_clusters, replace=False)
-                centroids = X[idx]
-                self.logger.info("Initialized centroids")
+                indices = np.random.choice(n_samples, self.n_clusters, replace=False)
+                centroids = X[indices]
             else:
                 centroids = None
             
-            # Broadcast centroids to all processes
             centroids = self.comm.bcast(centroids, root=0)
             
             # Split data among processes
-            chunk_size = len(X) // self.size
-            start_idx = self.rank * chunk_size
-            end_idx = start_idx + chunk_size if self.rank != self.size - 1 else len(X)
+            local_size = n_samples // self.size
+            start_idx = self.rank * local_size
+            end_idx = start_idx + local_size if self.rank != self.size - 1 else n_samples
             local_X = X[start_idx:end_idx]
-            
-            self.logger.info(f"Process {self.rank} received {len(local_X)} samples")
             
             for iteration in range(self.max_iter):
                 old_centroids = centroids.copy()
                 
-                # Calculate distances and assignments
-                distances = np.sqrt(((local_X - centroids[:, np.newaxis])**2).sum(axis=2))
-                local_labels = distances.argmin(axis=0)
+                # Process in mini-batches
+                n_batches = len(local_X) // self.batch_size + 1
+                local_new_centroids = np.zeros_like(centroids)
+                local_counts = np.zeros(self.n_clusters, dtype=np.int64)
                 
-                # Calculate new centroids
-                new_centroids = np.zeros_like(centroids)
-                counts = np.zeros(self.n_clusters, dtype=np.int64)
-                
-                for i in range(self.n_clusters):
-                    mask = local_labels == i
-                    if mask.any():
-                        new_centroids[i] = local_X[mask].sum(axis=0)
-                        counts[i] = mask.sum()
+                for i in range(n_batches):
+                    start = i * self.batch_size
+                    end = min(start + self.batch_size, len(local_X))
+                    batch_X = local_X[start:end]
+                    
+                    if len(batch_X) == 0:
+                        continue
+                        
+                    batch_centroids, batch_counts, _ = self._process_batch(batch_X, centroids)
+                    local_new_centroids += batch_centroids
+                    local_counts += batch_counts
                 
                 # Reduce results across processes
-                global_centroids = self.comm.allreduce(new_centroids, op=MPI.SUM)
-                global_counts = self.comm.allreduce(counts, op=MPI.SUM)
+                global_centroids = self.comm.allreduce(local_new_centroids, op=MPI.SUM)
+                global_counts = self.comm.allreduce(local_counts, op=MPI.SUM)
                 
                 # Update centroids
                 for i in range(self.n_clusters):
@@ -95,8 +108,16 @@ class MPIKMeans:
     def predict(self, X):
         try:
             X = np.asarray(X, dtype=np.float64)
-            distances = np.sqrt(((X - self.centroids_[:, np.newaxis])**2).sum(axis=2))
-            return distances.argmin(axis=0)
+            predictions = []
+            
+            for i in range(0, len(X), self.batch_size):
+                batch_X = X[i:i + self.batch_size]
+                distances = np.sqrt(((batch_X - self.centroids_[:, np.newaxis])**2).sum(axis=2))
+                batch_predictions = distances.argmin(axis=0)
+                predictions.append(batch_predictions)
+                
+            return np.concatenate(predictions)
+        
         except Exception as e:
             self.logger.error(f"Error in predict method: {str(e)}")
             raise

@@ -1,10 +1,20 @@
 datasets:
-  iris:
-    path: "data/iris_data.csv"
-    n_clusters: 3
-  wine:
-    path: "data/wine_data.csv"
-    n_clusters: 3
+  covertype:
+    path: "data/covertype_features.csv"
+    target_path: "data/covertype_target.csv"
+    n_clusters: 7
+    batch_size: 5000
+
+  mnist:
+    path: "data/mnist_features.csv"
+    target_path: "data/mnist_target.csv"
+    n_clusters: 10
+    batch_size: 1000
+
+  creditcard:
+    path: "data/creditcard.csv"
+    n_clusters: 2
+    batch_size: 2000
 
 max_iter: 100
 tolerance: 0.0001
